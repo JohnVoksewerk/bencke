@@ -1,77 +1,113 @@
 import streamlit as st
 import pandas as pd
 import time
-from datetime import datetime
 
-# --- KONFIGURATION & STYLING ---
+# --- KONFIGURATION & STYLING (THE "HIGH END" LOOK) ---
 st.set_page_config(
-    page_title="Bencke & Partners | Kundeportal",
+    page_title="Bencke & Partners | Client Portal",
     page_icon="Bd",
     layout="wide"
 )
 
-# Custom CSS for at matche Bencke & Partners identitet (Mørkeblå/Guld/Hvid)
+# Her injicerer vi avanceret CSS for at overskrive Streamlits standard "look"
 st.markdown("""
 <style>
-    /* Hovedfarver */
+    /* 1. Hent Google Fonts der matcher Bencke & Partners stilen */
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Lato:wght@300;400;700&display=swap');
+
+    /* 2. Generel App Baggrund */
     .stApp {
-        background-color: #f8f9fa;
+        background-color: #f4f6f9; /* Meget lys grå, eksklusiv */
+        font-family: 'Lato', sans-serif;
     }
-    .css-1d391kg {
-        padding-top: 1rem;
-    }
-    /* Sidebar styling */
-    [data-testid="stSidebar"] {
-        background-color: #0E1117;
-    }
-    [data-testid="stSidebar"] * {
-        color: #ffffff !important;
-    }
-    /* Overskrifter */
+
+    /* 3. Overskrifter med Serif (Ligner logoet) */
     h1, h2, h3 {
+        font-family: 'Playfair Display', serif !important;
         color: #0E1117;
-        font-family: 'serif';
+        font-weight: 700;
     }
-    /* Faner */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 10px;
+    
+    /* 4. Sidebar - Mørk Navy */
+    section[data-testid="stSidebar"] {
+        background-color: #0c1622; /* Dyb Navy */
     }
-    .stTabs [data-baseweb="tab"] {
-        background-color: #ffffff;
-        border-radius: 4px;
-        color: #0E1117;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.12);
-    }
-    .stTabs [aria-selected="true"] {
-        background-color: #0E1117 !important;
+    section[data-testid="stSidebar"] h1, 
+    section[data-testid="stSidebar"] h2, 
+    section[data-testid="stSidebar"] h3, 
+    section[data-testid="stSidebar"] p, 
+    section[data-testid="stSidebar"] span {
         color: #ffffff !important;
     }
-    /* Metrics */
+
+    /* 5. "Kort" Design - Det der får det til at ligne en rigtig app */
+    div.stContainer, div.stExpander {
+        background-color: #ffffff;
+        border-radius: 8px;
+        padding: 5px;
+        /* box-shadow: 0 4px 6px rgba(0,0,0,0.05);  <- Streamlit containers driller lidt med skygger, men hvid baggrund hjælper */
+    }
+
+    /* 6. Metrics (De tre tal i toppen) */
     div[data-testid="metric-container"] {
         background-color: #ffffff;
-        padding: 15px;
-        border-radius: 5px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        border-left: 5px solid #C5A065; /* Guld accent */
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        border-left: 4px solid #C5A065; /* Guld accent */
+    }
+    div[data-testid="metric-container"] label {
+        color: #666;
+        font-family: 'Lato', sans-serif;
+    }
+
+    /* 7. Knapper (Buttons) - Gør dem mere elegante */
+    div.stButton > button {
+        background-color: #0E1117;
+        color: #ffffff;
+        border: none;
+        border-radius: 4px;
+        padding: 0.5rem 1rem;
+        font-family: 'Lato', sans-serif;
+        transition: all 0.3s;
+    }
+    div.stButton > button:hover {
+        background-color: #C5A065; /* Guld ved hover */
+        color: #000000;
+    }
+
+    /* 8. Tabs styling */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 20px;
+        border-bottom: 1px solid #ddd;
+    }
+    .stTabs [data-baseweb="tab"] {
+        background-color: transparent;
+        border: none;
+        font-family: 'Playfair Display', serif;
+        font-size: 1.1rem;
+        color: #666;
+    }
+    .stTabs [aria-selected="true"] {
+        color: #0E1117 !important;
+        font-weight: bold;
+        border-bottom: 3px solid #C5A065 !important; /* Guld streg under valgt fane */
     }
 </style>
 """, unsafe_allow_html=True)
 
-# --- SESSION STATE & DUMMY DATA ---
-# Vi simulerer databasen her, da vi ikke har en rigtig backend endnu.
+# --- SESSION STATE & DATA (Beholder logikken intakt) ---
 if 'data_initialized' not in st.session_state:
-    # 1. Kunder
     st.session_state.company_name = "Tech Solutions A/S"
-    st.session_state.user_name = "Anders Jensen (CEO)"
-
-    # 2. Opgaver (Tasks)
+    st.session_state.user_name = "Anders Jensen"
+    
+    # Opgaver
     st.session_state.tasks = [
-        {"id": 101, "title": "Group CFO", "status": "Active", "phase": "Rekruttering", "created": "2024-10-01"},
-        {"id": 102, "title": "Financial Controller", "status": "Active", "phase": "Annoncering", "created": "2024-11-15"}
+        {"id": 101, "title": "Group CFO", "status": "Active", "phase": "Kandidater", "desc": "Strategisk CFO til børsnotering."},
+        {"id": 102, "title": "Financial Controller", "status": "Active", "phase": "Annoncering", "desc": "Hands-on controller til driften."}
     ]
 
-    # 3. Kandidater (Candidates) - Pulje af profiler
-    # Færdigheder og data er tilpasset CFO/Controller segmentet
+    # Kandidater
     candidates_pool = [
         {"id": 1, "name": "Henrik Nielsen", "title": "CFO", "exp": "15 år", "skills": ["M&A", "IPO", "Change Mgmt"]},
         {"id": 2, "name": "Maria Svendsen", "title": "Finance Manager", "exp": "8 år", "skills": ["Reporting", "Navision", "Team Lead"]},
@@ -81,214 +117,140 @@ if 'data_initialized' not in st.session_state:
     ]
     st.session_state.candidates = {c["id"]: c for c in candidates_pool}
 
-    # 4. Task_Candidates (Junction Table) - KRITISK LOGIK 
-    # Her linker vi kandidater til opgaver med en specifik status og score.
-    # Status flow: raw -> screened -> presented_to_customer -> interviewed
+    # Junction Logik (Task <-> Candidates)
     st.session_state.task_candidates = [
-        # Kandidater til "Group CFO" (Opgave 101)
-        {"task_id": 101, "candidate_id": 1, "status": "presented_to_customer", "match_score": 92, "consultant_note": "Stærk strategisk profil."},
+        {"task_id": 101, "candidate_id": 1, "status": "presented_to_customer", "match_score": 92, "consultant_note": "Stærk strategisk profil. Har prøvet en IPO før."},
         {"task_id": 101, "candidate_id": 4, "status": "presented_to_customer", "match_score": 88, "consultant_note": "Godt kulturelt match, stærk på drift."},
-        {"task_id": 101, "candidate_id": 3, "status": "screened", "match_score": 75, "consultant_note": "Endnu ikke præsenteret for kunde."}, # Skal IKKE vises
-
-        # Kandidater til "Financial Controller" (Opgave 102) - Stadig tidligt i forløbet
         {"task_id": 102, "candidate_id": 2, "status": "presented_to_customer", "match_score": 95, "consultant_note": "Perfekt match på Navision erfaring."},
-        {"task_id": 102, "candidate_id": 5, "status": "interviewed", "match_score": 82, "consultant_note": "Solid faglighed, men ung."},
     ]
-
-    # 5. Dokumenter og Annoncer (Mock data)
-    st.session_state.approvals = {
-        101: {"job_profile": True, "ad_text": True},
-        102: {"job_profile": True, "ad_text": False}
-    }
-
+    st.session_state.approvals = {101: True, 102: False}
     st.session_state.data_initialized = True
 
 # --- SIDEBAR ---
 with st.sidebar:
-    # Forsøg at vise logo, ellers vis tekst
+    # Logo Placeholder
     try:
         st.image("Bencke-Partners logo.jpg", use_container_width=True)
     except:
-        st.markdown("### BENCKE & PARTNERS")
-        st.caption("Recruitment | Search | Selection")
+        st.markdown("<h2 style='text-align: center; color: white;'>BENCKE & PARTNERS</h2>", unsafe_allow_html=True)
     
     st.markdown("---")
-    menu = st.radio("Navigation", ["Dashboard", "Mine Opgaver", "Vidensbank"])
+    menu = st.radio("MENU", ["Dashboard", "Mine Opgaver", "Market Insights"], label_visibility="collapsed")
     
     st.markdown("---")
-    st.info(f"Logget ind som:\n**{st.session_state.company_name}**\n{st.session_state.user_name}")
+    st.caption("LOGGET IND SOM")
+    st.markdown(f"**{st.session_state.user_name}**")
+    st.caption(st.session_state.company_name)
 
 # --- HOVEDINDHOLD ---
 
-# 1. DASHBOARD VIEW
+# 1. DASHBOARD
 if menu == "Dashboard":
-    st.title(f"Velkommen, {st.session_state.user_name.split()[0]}")
-    st.markdown("Her er et overblik over dine igangværende rekrutteringsprocesser.")
+    st.title("Overblik")
+    st.markdown(f"Velkommen tilbage, {st.session_state.user_name.split()[0]}. Her er status på dine rekrutteringer.")
     
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # Metrics i pæne bokse
     col1, col2, col3 = st.columns(3)
     with col1:
         st.metric("Aktive Processer", len(st.session_state.tasks))
     with col2:
-        # Tæl kandidater der er præsenteret (status >= presented_to_customer)
-        visible_candidates = [tc for tc in st.session_state.task_candidates if tc["status"] in ["presented_to_customer", "interviewed", "hired"]]
-        st.metric("Kandidater Præsenteret", len(visible_candidates))
+        cands_count = len([c for c in st.session_state.task_candidates if c["status"] == "presented_to_customer"])
+        st.metric("Nye Kandidater", cands_count, "Klar til review")
     with col3:
-        st.metric("Gns. Time-to-Fill", "45 Dage", "+2 dage vs markedet")
+        st.metric("Markeds Index", "104.2", "+2.1% ift. Q3")
 
-    st.markdown("### Seneste Aktiviteter")
-    st.info("🔔 **Ny kandidat præsenteret** på opgaven 'Financial Controller' (I går)")
-    st.success("✅ **Annoncetekst godkendt** for 'Group CFO' (3 dage siden)")
+    st.markdown("### Seneste nyt")
+    # Lave en "Card" lignende container manuelt
+    with st.container():
+        st.info(f"**Action required:** Du har 1 annonce der afventer godkendelse.")
+        st.success(f"**Nyt match:** Vi har uploadet 2 kandidater til stillingen 'Group CFO'.")
 
-# 2. MINE OPGAVER VIEW
+# 2. MINE OPGAVER
 elif menu == "Mine Opgaver":
     st.title("Mine Opgaver")
     
-    # Vælg opgave selector
-    task_options = {t["id"]: t["title"] for t in st.session_state.tasks}
-    selected_task_id = st.selectbox("Vælg rekrutteringsopgave:", list(task_options.keys()), format_func=lambda x: task_options[x])
+    # Task Selector
+    task_map = {t["id"]: t["title"] for t in st.session_state.tasks}
+    selected_id = st.selectbox("Vælg stilling", list(task_map.keys()), format_func=lambda x: task_map[x])
+    current_task = next(t for t in st.session_state.tasks if t["id"] == selected_id)
+
+    st.markdown("---")
     
-    # Find valgt opgave objekt
-    selected_task = next(t for t in st.session_state.tasks if t["id"] == selected_task_id)
+    # FASER
+    t1, t2, t3 = st.tabs(["1. Afdækning", "2. Annoncering", "3. Kandidater"])
     
-    st.markdown(f"### Status: {selected_task['title']}")
-    
-    # FASE TABS
-    tab1, tab2, tab3 = st.tabs(["1. Afdækning & Profil", "2. Annoncering", "3. Kandidater"])
-    
-    # --- TAB 1: AFDÆKNING ---
-    with tab1:
-        st.header("Foranalyse & Jobprofil")
-        col_a, col_b = st.columns([2, 1])
+    with t1:
+        st.subheader("Jobprofil & Analyse")
+        st.markdown(f"Godkendt jobprofil for **{current_task['title']}**.")
+        with st.expander("Se detaljeret profil"):
+            st.write("Her vises den fulde kompetenceprofil, lederprofil og succeskriterier.")
+            st.caption("Dokument ID: 2024-DOC-882")
+
+    with t2:
+        st.subheader("Annoncemateriale")
+        is_approved = st.session_state.approvals[selected_id]
         
-        with col_a:
-            st.markdown("""
-            **Resumé af Foranalyse:**
-            Vi har gennemført workshops med direktionen. Fokus er på en CFO der kan løfte rapporteringen til IFRS standard og agere strategisk sparringspartner.
-            
-            **Kritiske succesfaktorer:**
-            * Implementering af nyt ERP
-            * Klargøring til børsnotering (IPO)
-            """)
-            
-            with st.expander("📄 Se Udkast til Jobprofil (PDF Preview)"):
-                st.markdown("*Her ville en PDF viewer blive vist*")
-                st.image("https://placehold.co/600x400/EEE/31343C?text=Jobprofil+Preview", caption="Jobprofil v1.pdf")
-        
-        with col_b:
-            st.markdown("### Godkendelse")
-            is_approved = st.session_state.approvals[selected_task_id]["job_profile"]
-            
+        col_ad1, col_ad2 = st.columns([2,1])
+        with col_ad1:
+            st.text_area("Annoncetekst", value=f"Vi søger en {current_task['title']} til...", height=200)
+        with col_ad2:
+            st.markdown("**Status**")
             if is_approved:
-                st.success("✅ Jobprofil er godkendt")
-                st.caption("Godkendt d. 10. okt 2024 af Anders Jensen")
+                st.success("✅ Publiceret")
             else:
-                st.warning("⚠️ Afventer din godkendelse")
-                if st.button("Godkend Jobprofil"):
-                    st.session_state.approvals[selected_task_id]["job_profile"] = True
+                st.warning("⚠️ Afventer godkendelse")
+                if st.button("Godkend Nu"):
+                    st.session_state.approvals[selected_id] = True
                     st.rerun()
 
-    # --- TAB 2: ANNONCERING ---
-    with tab2:
-        st.header("Annoncemateriale")
-        st.markdown("Nedenfor ses udkast til annonceteksten genereret på baggrund af jobprofilen.")
+    with t3:
+        st.subheader("Kandidatliste")
         
-        ad_text = st.text_area("Annoncetekst (Redigérbar)", height=300, value=f"""
-ERFAREN GROUP CFO TIL {st.session_state.company_name.upper()}
-
-Er du en strategisk stærk økonomiprofil med erfaring fra børsnoterede selskaber? 
-{st.session_state.company_name} står overfor en spændende vækstrejse...
-
-Dine ansvarsområder:
-- Overordnet ansvar for Finance & IT
-- Rapportering til Bestyrelse
-- Ledelse af et team på 15 medarbejdere
-
-Vi tilbyder:
-En nøglerolle i en markedsledende virksomhed...
-        """)
+        cands = [tc for tc in st.session_state.task_candidates if tc["task_id"] == selected_id]
         
-        col_ads1, col_ads2 = st.columns([3, 1])
-        with col_ads2:
-            st.markdown("<br>", unsafe_allow_html=True)
-            is_ad_approved = st.session_state.approvals[selected_task_id]["ad_text"]
-            
-            if is_ad_approved:
-                st.success("✅ Annonce godkendt")
-            else:
-                if st.button("Godkend & Publicér"):
-                    st.session_state.approvals[selected_task_id]["ad_text"] = True
-                    st.balloons()
-                    st.rerun()
-
-    # --- TAB 3: KANDIDATER (REKRUTTERING) ---
-    with tab3:
-        st.header("Præsenterede Kandidater")
-        
-        # Filtreringslogik: Hent kandidater fra Junction Table for denne opgave
-        # Logik fra Data Relationer 5.1: Kun 'presented_to_customer' eller højere vises [cite: 201, 217]
-        task_cands = [
-            tc for tc in st.session_state.task_candidates 
-            if tc["task_id"] == selected_task_id 
-            and tc["status"] in ["presented_to_customer", "interviewed", "hired"]
-        ]
-        
-        if not task_cands:
-            st.info("Der er endnu ingen kandidater klar til præsentation i denne fase.")
+        if not cands:
+            st.info("Ingen kandidater præsenteret endnu.")
         else:
-            for tc in task_cands:
-                cand_profile = st.session_state.candidates[tc["candidate_id"]]
+            for c in cands:
+                profile = st.session_state.candidates[c["candidate_id"]]
                 
-                # Kandidat Kort Design
-                with st.container():
-                    c1, c2, c3, c4 = st.columns([1, 2, 1, 1])
-                    
-                    with c1:
-                        # Avatar placeholder
-                        st.markdown(f"<div style='background-color:#ddd; height:80px; width:80px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:24px;'>{cand_profile['name'][0]}</div>", unsafe_allow_html=True)
-                    
-                    with c2:
-                        st.subheader(cand_profile["name"])
-                        st.caption(f"{cand_profile['title']} | Erfaring: {cand_profile['exp']}")
-                        # Vis skills som tags
-                        tags = " ".join([f"`{s}`" for s in cand_profile["skills"]])
-                        st.markdown(tags)
-                    
-                    with c3:
-                        st.metric("Match Score", f"{tc['match_score']}%")
-                    
-                    with c4:
-                        st.markdown(f"**Status:**")
-                        status_map = {
-                            "presented_to_customer": "🟡 Præsenteret",
-                            "interviewed": "🟢 Interviewet",
-                            "hired": "🏆 Ansat"
-                        }
-                        st.markdown(status_map.get(tc['status'], tc['status']))
-                        
-                    # Detalje expander
-                    with st.expander(f"Se vurdering af {cand_profile['name'].split()[0]}"):
-                        st.markdown(f"**Konsulentens notater:**")
-                        st.info(tc["consultant_note"])
-                        
-                        st.markdown("**Handlinger:**")
-                        ac1, ac2 = st.columns(2)
-                        with ac1:
-                            if st.button(f"Indkald til samtale", key=f"btn_int_{tc['candidate_id']}"):
-                                st.toast(f"Invitation sendt til {cand_profile['name']}")
-                        with ac2:
-                            st.feedback("stars", key=f"rate_{tc['candidate_id']}")
-                    
-                    st.divider()
+                # CUSTOM CARD DESIGN START
+                st.markdown(f"""
+                <div style="background-color: white; padding: 20px; border-radius: 10px; border: 1px solid #eee; margin-bottom: 15px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h3 style="margin: 0; color: #0E1117;">{profile['name']}</h3>
+                            <p style="margin: 0; color: #666;">{profile['title']} • {profile['exp']} erfaring</p>
+                        </div>
+                        <div style="text-align: right;">
+                            <h2 style="margin: 0; color: #C5A065;">{c['match_score']}%</h2>
+                            <span style="font-size: 0.8em; color: #999;">MATCH SCORE</span>
+                        </div>
+                    </div>
+                    <hr style="margin: 10px 0; border: none; border-top: 1px solid #eee;">
+                    <p style="font-style: italic; color: #444;">"{c['consultant_note']}"</p>
+                    <div style="margin-top: 10px;">
+                        {' '.join([f'<span style="background-color: #f0f2f6; padding: 4px 8px; border-radius: 4px; font-size: 0.85em; margin-right: 5px;">{s}</span>' for s in profile['skills']])}
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                # CUSTOM CARD DESIGN END
+                
+                # Knapper under kortet
+                c_act1, c_act2 = st.columns([1, 4])
+                with c_act1:
+                    if st.button("Book Interview", key=f"book_{c['candidate_id']}"):
+                        st.toast(f"Invitation sendt til {profile['name']}")
 
-# 3. VIDENSBANK VIEW
-elif menu == "Vidensbank":
-    st.title("Markedsindsigt & Data")
-    st.markdown("Baseret på Bencke & Partners data fra lignende rekrutteringer.")
+# 3. INSIGHTS
+elif menu == "Market Insights":
+    st.title("Market Insights")
+    st.markdown("Realtidsdata fra Bencke & Partners database.")
     
-    # Dummy chart
     chart_data = pd.DataFrame({
-        "Måned": ["Jan", "Feb", "Mar", "Apr", "Maj", "Jun"],
-        "Lønniveau Index": [100, 102, 101, 104, 106, 105]
+        "Måned": ["Jan", "Feb", "Mar", "Apr", "Maj"],
+        "Aktivitet": [20, 35, 30, 45, 60]
     })
-    st.line_chart(chart_data, x="Måned", y="Lønniveau Index")
-    st.caption("Udvikling i lønforventninger for CFO-profiler (YTD)")
+    st.bar_chart(chart_data, x="Måned", y="Aktivitet", color="#C5A065")
